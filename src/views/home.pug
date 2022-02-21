@@ -1,0 +1,19 @@
+doctype html
+html(lang="en")
+    head
+        meta(charset="UTF-8")
+        meta(http-equiv="X-UA-Compatible", content="IE=edge")
+        meta(name="viewport", content="width=device-width, initial-scale=1.0")
+        title snakeDuel
+        link(rel="stylesheet", href="../public/css/style.css")
+    body 
+        div#welcome
+            form
+                input(type="text", placehelder="room name", required)
+                button Enter room
+        div#gameBoard
+            canvas#gameCanvas
+            form.retryForm
+                button Retry
+        
+        script(src="../public/js/snake.js") 
