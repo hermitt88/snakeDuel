@@ -8,12 +8,15 @@ html(lang="en")
         link(rel="stylesheet", href="../public/css/style.css")
     body 
         div#welcome
-            form
-                input(type="text", placehelder="room name", required)
-                button Enter room
+            h1 snakeDuel
+            form.joinForm
+                input(type="text", placeholder="enter room name", required)
+                button Join room
+            ul#roomList
         div#gameBoard
             canvas#gameCanvas
-            form.retryForm
-                button Retry
+            form.readyForm
+                button Ready
         
+        script(src="/socket.io/socket.io.js") 
         script(src="../public/js/snake.js") 

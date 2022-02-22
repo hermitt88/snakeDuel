@@ -22,7 +22,7 @@ const gap = Math.ceil(canvas.width / (pointsPerLine + 2));
 const gameboardW = gap * pointsPerLine;
 const gameboardH = gap * pointsPerLine;
 
-const retryForm = document.querySelector(".retryForm");
+const readyForm = document.querySelector(".readyForm");
 
 let timeoutId;
 let snake, apple;
@@ -31,7 +31,7 @@ let snakeInterval;
 let lengthGoal;
 let direction, directionTemp;
 let directions = [KEY_RIGHT, KEY_DOWN, KEY_LEFT, KEY_UP]
-setSnakeGame();
+// setSnakeGame();
 
 let touchstartX, touchstartY, touchendX, touchendY;
 
@@ -193,14 +193,14 @@ function removeSnakeTail() {
     ctx.fillRect(snakeTail[0]*gap, snakeTail[1]*gap, gap, gap);
 }
 
-function handleRetryBtn(e) {
+function handleReadyBtn(e) {
     e.preventDefault();
     clearTimeout(timeoutId);
     ctx.clearRect(0, 0, gameboardW, gameboardH);
     setSnakeGame();
 }
 
-retryForm.addEventListener("submit", handleRetryBtn);
+readyForm.addEventListener("submit", handleReadyBtn);
 
 window.addEventListener("keydown", changeDirection);
 
@@ -226,3 +226,23 @@ function changeDirection(e) {
         }
     }
 }
+
+
+const socket = io();
+const joinForm = document.querySelector(".joinForm");
+
+const gameBoard = document.getElementById("gameBoard");
+gameBoard.hidden = true;
+
+let roomName;
+
+function handleJoin(e) {
+    e.preventDefault();
+    const input = joinForm.querySelector("input");
+    roomName = input.value;
+    socket.emit("join_room", roomName);
+    input.value = "";
+    console.log(roomName);
+}
+
+joinForm.addEventListener("submit", handleJoin);
