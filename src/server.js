@@ -13,17 +13,35 @@ app.use("/public", express.static(__dirname + "/src/public"));
 app.get("/", (_, res) => res.render("home"));
 app.get("/*", (_, res) => res.redirect("/"));
 
-const handleListen = () => console.log(`Listening on http://localhost:3000`)
+const handleListen = () => console.log(`Listening on http://localhost:${app.get('port')||3000}`)
 
 const httpServer = http.createServer(app);
 const wsServer = new Server(httpServer);
 
+let rooms = 0;
+
+function counter(roomName) {
+    return wsServer.sockets.adapter.rooms.get(roomName)?.size;
+  }
+
 wsServer.on("connection", (socket) => {
     socket.on("join_room", (roomName) => {
         socket.join(roomName);
-        
+        if (counter(roomName) == 1) {
+            socket.emit("player1", "player1");
+        } else if (counter(roomName) == 2) {
+            socket.emit("player2", "player2");
+        } else {
+            socket.emit("observer", "observer");
+        }
+
     });
+    socket.on("leave_room", (roomName) => {
+        socket.leave(roomName);
+        socket.emit("leaved");
+    })
+
 });
 
 
-httpServer.listen(3000, handleListen);
+httpServer.listen(process.env.PORT||3000, handleListen);

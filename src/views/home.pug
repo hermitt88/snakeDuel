@@ -15,8 +15,12 @@ html(lang="en")
             ul#roomList
         div#gameBoard
             canvas#gameCanvas
+            h3.joinedRoom
+            h4.message
             form.readyForm
                 button Ready
+            form.leaveForm
+                button Leave
         
         script(src="/socket.io/socket.io.js") 
-        script(src="../public/js/snake.js") 
+        script(src="../public/js/snakeDuel.js") 

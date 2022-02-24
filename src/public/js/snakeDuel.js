@@ -15,18 +15,25 @@ const KEY_UP = "ArrowUp"
 
 const boardColor1 = "hsl(44, 40%, 88%)";
 const boardColor2 = "hsl(44, 40%, 80%)";
+const snakeColor1 = "green";
+const snakeColor2 = "#25779f";
+const appleColor = "#ff0800";
 
-const pointsPerLine = 20;
+const pointsPerLine = 19;
 const gap = Math.ceil(canvas.width / (pointsPerLine + 2));
 
 const gameboardW = gap * pointsPerLine;
 const gameboardH = gap * pointsPerLine;
+console.log(gap, canvasW, gameboardW);
 
 const readyForm = document.querySelector(".readyForm");
+const leaveForm = document.querySelector(".leaveForm");
 
 let timeoutId;
-let snake, apple;
-let headX, headY;
+let snake1, snake2, apple;
+let opponentsSnake;
+let headX1, headY1;
+let headX2, headY2;
 let snakeInterval;
 let lengthGoal;
 let direction, directionTemp;
@@ -69,10 +76,10 @@ function handleGesure() {
 }
 
 function putApple() {
-    while (apple.length === 0 || JSON.stringify(snake).includes(JSON.stringify(apple))) {
+    while (apple.length === 0 || JSON.stringify([...snake1, ...snake2]).includes(JSON.stringify(apple))) {
         apple = [Math.floor(Math.random() * pointsPerLine), Math.floor(Math.random() * pointsPerLine)];
     }
-    paintAppleBlock(apple[0], apple[1]);
+    paintBlock(apple[0], apple[1], appleColor);
 }
 
 function snakeGame() {
@@ -80,8 +87,8 @@ function snakeGame() {
 }
 
 function moveSnake() {
-    headX = snake[0][0];
-    headY = snake[0][1];
+    headX1 = snake1[0][0];
+    headY1 = snake1[0][1];
     if (directionTemp.length != 0) {
         let newDirection = directionTemp.shift();
         if (direction == "right" && newDirection != "left" && newDirection != "right") {direction = newDirection}
@@ -91,24 +98,24 @@ function moveSnake() {
     }
     switch (direction) {
         case "right":
-            headX += 1;
+            headX1 += 1;
             break
         case "down":
-            headY += 1;
+            headY1 += 1;
             break
         case "left":
-            headX -= 1;
+            headX1 -= 1;
             break
         case "up":
-            headY -= 1;
+            headY1 -= 1;
             break
     }
-    if (JSON.stringify(snake).includes(JSON.stringify([headX, headY]), 1) || headX<0 || headY<0 || headX>pointsPerLine-1 ||headY>pointsPerLine-1) {
+    if (JSON.stringify(snake1).includes(JSON.stringify([headX1, headY1]), 1) || headX1<0 || headY1<0 || headX1>pointsPerLine-1 ||headY1>pointsPerLine-1) {
         gameOver();
     } else {
-        paintSnakeBlock(headX, headY);
-        snake.unshift([headX, headY]);
-        if (JSON.stringify(apple) == JSON.stringify(snake[0])) {
+        paintBlock(headX1, headY1, snakeColor1);
+        snake1.unshift([headX1, headY1]);
+        if (JSON.stringify(apple) == JSON.stringify(snake1[0])) {
             if (snakeLength == lengthGoal) {
                 gameClear();
             } else {
@@ -125,9 +132,10 @@ function moveSnake() {
 
 function setSnakeGame() {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvasW, canvasH);
     ctx.fillStyle = "#964b00";
     ctx.fillRect(0, 0, canvasW, canvasH);
-    ctx.translate(0.5*(canvasW - gameboardW), 0.5*(canvasH - gameboardH));
+    ctx.translate(Math.floor(0.5*(canvasW - gameboardW)), Math.floor(0.5*(canvasH - gameboardH)));
     for (let i=0; i<pointsPerLine; i++) {
         for (let j=0; j<pointsPerLine; j++) {
             if ((i+j) % 2 == 0) {
@@ -139,17 +147,23 @@ function setSnakeGame() {
         }
     };
 
-    snake = [[10, 9], [9, 9], [8, 9]];
+    snake1 = [[4, 2], [3, 2], [2, 2]];
+    snake2 = [[14, 16], [15, 16], [16, 16]];
     snakeInterval = 200;
     lengthGoal = 30;
     direction = "right";
     directionTemp = [];
     snakeLength = 3;
-    for (let block of snake) {
-        headX = block[0];
-        headY = block[1];
-        paintSnakeBlock(headX, headY);
-    }
+    for (let block of snake1) {
+        headX1 = block[0];
+        headY1 = block[1];
+        paintBlock(headX1, headY1, snakeColor1);
+    };
+    for (let block of snake2) {
+        headX2 = block[0];
+        headY2 = block[1];
+        paintBlock(headX2, headY2, snakeColor2);
+    };
     apple = [];
     putApple();
     snakeGame();
@@ -157,34 +171,29 @@ function setSnakeGame() {
 
 function gameOver() {
     clearTimeout(timeoutId);
-    for (let i = 0; i < snake.length; i++) {
+    for (let i = 0; i < snake1.length; i++) {
         setTimeout(() => {
-            ctx.fillStyle = "hsl(0, 0%, " + Math.round(100*(1 - i/(snake.length - 1))).toString() + "%)";
-            ctx.fillRect(Math.round((0.075+snake[i][0])*gap), Math.round((0.075+snake[i][1])*gap), Math.round(0.85*gap), Math.round(0.85*gap));}, 100*i);
+            ctx.fillStyle = "hsl(0, 0%, " + Math.round(100*(1 - i/(snake1.length - 1))).toString() + "%)";
+            ctx.fillRect(Math.round((0.075+snake1[i][0])*gap), Math.round((0.075+snake1[i][1])*gap), Math.round(0.85*gap), Math.round(0.85*gap));}, 100*i);
         }
 }
 
 function gameClear() {
     clearTimeout(timeoutId);
-    for (let i = 0; i < snake.length; i++) {
+    for (let i = 0; i < snake1.length; i++) {
         setTimeout(() => {
-            ctx.fillStyle = "hsl(" + Math.round(320*i/(snake.length - 1)).toString() + ", 100%, 50%)";
-            ctx.fillRect(Math.round((0.075+snake[i][0])*gap), Math.round((0.075+snake[i][1])*gap), Math.round(0.85*gap), Math.round(0.85*gap));}, 100*i);
+            ctx.fillStyle = "hsl(" + Math.round(320*i/(snake1.length - 1)).toString() + ", 100%, 50%)";
+            ctx.fillRect(Math.round((0.075+snake1[i][0])*gap), Math.round((0.075+snake1[i][1])*gap), Math.round(0.85*gap), Math.round(0.85*gap));}, 100*i);
         }
 }
 
-function paintSnakeBlock(x, y) {
-    ctx.fillStyle = "green";
+function paintBlock(x, y, color) {
+    ctx.fillStyle = color;
     ctx.fillRect(Math.round((0.075+x)*gap), Math.round((0.075+y)*gap), Math.round(0.85*gap), Math.round(0.85*gap));
 }
 
-function paintAppleBlock() {
-    ctx.fillStyle = "#ff0800";
-    ctx.fillRect(Math.round((0.075+apple[0])*gap), Math.round((0.075+apple[1])*gap), Math.round(0.85*gap), Math.round(0.85*gap));
-}
-
 function removeSnakeTail() {
-    const snakeTail = snake.pop();
+    const snakeTail = snake1.pop();
     if ((snakeTail[0]+snakeTail[1]) % 2 == 0) {
         ctx.fillStyle = boardColor1;
     } else {
@@ -196,11 +205,23 @@ function removeSnakeTail() {
 function handleReadyBtn(e) {
     e.preventDefault();
     clearTimeout(timeoutId);
-    ctx.clearRect(0, 0, gameboardW, gameboardH);
     setSnakeGame();
 }
 
+// function handleReadyBtn(e) {
+//     e.preventDefault();
+//     readyForm.hidden = true;
+//     socket.emit
+// }
+
+function handleLeaveBtn(e) {
+    e.preventDefault();
+    toRoom();
+    socket.emit("leave_room", roomName);
+}
+
 readyForm.addEventListener("submit", handleReadyBtn);
+leaveForm.addEventListener("submit", handleLeaveBtn);
 
 window.addEventListener("keydown", changeDirection);
 
@@ -229,12 +250,16 @@ function changeDirection(e) {
 
 
 const socket = io();
+// const socket = io("HEROKU URL");
+const welcome = document.getElementById("welcome");
 const joinForm = document.querySelector(".joinForm");
 
 const gameBoard = document.getElementById("gameBoard");
+const joinedRoom = gameBoard.querySelector(".joinedRoom");
 gameBoard.hidden = true;
 
 let roomName;
+const message = gameBoard.querySelector(".message");
 
 function handleJoin(e) {
     e.preventDefault();
@@ -242,7 +267,33 @@ function handleJoin(e) {
     roomName = input.value;
     socket.emit("join_room", roomName);
     input.value = "";
-    console.log(roomName);
-}
+    toRoom();
+    joinedRoom.innerText = `Room: ${roomName}`;
+};
+
+function toRoom() {
+    welcome.hidden = true;
+    gameBoard.hidden = false;
+};
+
+function toWelcome() {
+    gameBoard.hidden = true;
+    welcome.hidden = false;
+};
+
+socket.on("leaved", () => {
+    toWelcome();
+})
+
+socket.on("player1", (who) => {
+    message.innerText = `You are ${who}`
+});
+socket.on("player2", (who) => {
+    message.innerText = `You are ${who}`
+});
+socket.on("observer", (who) => {
+    message.innerText = `You are ${who}`
+});
+
 
 joinForm.addEventListener("submit", handleJoin);
