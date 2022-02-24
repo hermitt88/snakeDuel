@@ -19,10 +19,30 @@ const httpServer = http.createServer(app);
 const wsServer = new Server(httpServer);
 
 let rooms = 0;
+let winFlag1 = "";
+let winFlag2 = "";
 
 function counter(roomName) {
     return wsServer.sockets.adapter.rooms.get(roomName)?.size;
-  }
+}
+
+function judge(winFlag1, winFlag2) {
+    if (winFlag1 && winFlag2) {
+        if (winFlag1 == "win" && winFlag2 == "win") {
+            socket.emit("drawGame", true);
+        } else if (winFlag1 == "win" && winFlag2 == "lose") {
+            socket.emit("winner", true);
+        } else if (winFlag1 == "lose" && winFlag2 == "win") {
+            socket.emit("winner", false);
+        } else {
+            socket.emit("drawGame", false);
+        }
+        winFlag1 = "";
+        winFlag2 = "";
+    }
+
+
+}
 
 wsServer.on("connection", (socket) => {
     socket.on("join_room", (roomName) => {
@@ -36,6 +56,14 @@ wsServer.on("connection", (socket) => {
         }
 
     });
+    socket.on("winFlag1", (winFlag) => {
+        winFlag1 = winFlag;
+        judge(winFlag1, winFlag2);
+    })
+    socket.on("winFlag2", (winFlag) => {
+        winFlag2 = winFlag;
+        judge(winFlag1, winFlag2);
+    })
     socket.on("leave_room", (roomName) => {
         socket.leave(roomName);
         socket.emit("leaved");

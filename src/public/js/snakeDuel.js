@@ -91,10 +91,10 @@ function moveSnake() {
     headY1 = snake1[0][1];
     if (directionTemp.length != 0) {
         let newDirection = directionTemp.shift();
-        if (direction == "right" && newDirection != "left" && newDirection != "right") {direction = newDirection}
-        if (direction == "down" && newDirection != "up" && newDirection != "down") {direction = newDirection}
-        if (direction == "left" && newDirection != "right" && newDirection != "left") {direction = newDirection}
-        if (direction == "up" && newDirection != "down" && newDirection != "up") {direction = newDirection}
+        if ((direction == "right" && newDirection != "left" && newDirection != "right") 
+        || (direction == "down" && newDirection != "up" && newDirection != "down") 
+        || (direction == "left" && newDirection != "right" && newDirection != "left") 
+        || (direction == "up" && newDirection != "down" && newDirection != "up")) {direction = newDirection}
     }
     switch (direction) {
         case "right":
@@ -110,14 +110,27 @@ function moveSnake() {
             headY1 -= 1;
             break
     }
-    if (JSON.stringify(snake1).includes(JSON.stringify([headX1, headY1]), 1) || headX1<0 || headY1<0 || headX1>pointsPerLine-1 ||headY1>pointsPerLine-1) {
-        gameOver();
+    if (headX1 == headX2 && headY1 == headY2) {
+        if (snake1.length > snake2.length) {
+            socket.emit("winFlag1", "win");
+            socket.emit("winFlag2", "lose");
+        } else if (snake1.length < snake2.length) {
+            socket.emit("winFlag1", "lose");
+            socket.emit("winFlag2", "win");
+        } else {
+            socket.emit("winFlag", "lose");
+            socket.emit("winFlag", "lose");
+        }
+    } else if (JSON.stringify(snake1).includes(JSON.stringify([headX1, headY1]), 1) || headX1<0 || headY1<0 || headX1>pointsPerLine-1 ||headY1>pointsPerLine-1) {
+        // gameOver();
+        socket.emit("winFlag1", "lose");
     } else {
         paintBlock(headX1, headY1, snakeColor1);
         snake1.unshift([headX1, headY1]);
-        if (JSON.stringify(apple) == JSON.stringify(snake1[0])) {
+        if (JSON.stringify(apple).includes(JSON.stringify(snake1[0]))) {
             if (snakeLength == lengthGoal) {
-                gameClear();
+                // gameClear();
+                socket.emit("winFlag1", "win");
             } else {
                 apple = [];
                 putApple();
@@ -169,22 +182,47 @@ function setSnakeGame() {
     snakeGame();
 }
 
-function gameOver() {
+socket.on("drawGame", (areTheyCleared) => {
     clearTimeout(timeoutId);
-    for (let i = 0; i < snake1.length; i++) {
+    if (areTheyCleared) {
+        gameClear(snake1);
+        gameClear(snake2);
+    } else {
+        gameOver(snake1);
+        gameOver(snake2);
+    }
+})
+socket.on("winner", (didPlayer1Win) => {
+    clearTimeout(timeoutId);
+    if (didPlayer1Win) {
+        gameClear(snake1);
+        gameOver(snake2);
+        player1Score += 1;
+        score.innerText = `Player1 ${player1Score}:${player2Score} Player2`
+    } else {
+        gameOver(snake1);
+        gameClear(snake2);
+        player2Score += 1;
+        score.innerText = `Player1 ${player1Score}:${player2Score} Player2`
+    }
+})
+
+function gameOver(snake) {
+    for (let i = 0; i < snake.length; i++) {
         setTimeout(() => {
-            ctx.fillStyle = "hsl(0, 0%, " + Math.round(100*(1 - i/(snake1.length - 1))).toString() + "%)";
-            ctx.fillRect(Math.round((0.075+snake1[i][0])*gap), Math.round((0.075+snake1[i][1])*gap), Math.round(0.85*gap), Math.round(0.85*gap));}, 100*i);
+            ctx.fillStyle = "hsl(0, 0%, " + Math.round(100*(1 - i/(snake.length - 1))).toString() + "%)";
+            ctx.fillRect(Math.round((0.075+snake[i][0])*gap), Math.round((0.075+snake[i][1])*gap), Math.round(0.85*gap), Math.round(0.85*gap));}, 100*i);
         }
+    btns.hidden = false;
 }
 
-function gameClear() {
-    clearTimeout(timeoutId);
-    for (let i = 0; i < snake1.length; i++) {
+function gameClear(snake) {
+    for (let i = 0; i < snake.length; i++) {
         setTimeout(() => {
-            ctx.fillStyle = "hsl(" + Math.round(320*i/(snake1.length - 1)).toString() + ", 100%, 50%)";
-            ctx.fillRect(Math.round((0.075+snake1[i][0])*gap), Math.round((0.075+snake1[i][1])*gap), Math.round(0.85*gap), Math.round(0.85*gap));}, 100*i);
+            ctx.fillStyle = "hsl(" + Math.round(320*i/(snake.length - 1)).toString() + ", 100%, 50%)";
+            ctx.fillRect(Math.round((0.075+snake[i][0])*gap), Math.round((0.075+snake[i][1])*gap), Math.round(0.85*gap), Math.round(0.85*gap));}, 100*i);
         }
+    btns.hidden = false;
 }
 
 function paintBlock(x, y, color) {
@@ -202,9 +240,11 @@ function removeSnakeTail() {
     ctx.fillRect(snakeTail[0]*gap, snakeTail[1]*gap, gap, gap);
 }
 
+const btns = document.querySelector(".btns");
+
 function handleReadyBtn(e) {
     e.preventDefault();
-    clearTimeout(timeoutId);
+    btns.hidden = true;
     setSnakeGame();
 }
 
@@ -216,7 +256,7 @@ function handleReadyBtn(e) {
 
 function handleLeaveBtn(e) {
     e.preventDefault();
-    toRoom();
+    toWelcome();
     socket.emit("leave_room", roomName);
 }
 
@@ -260,6 +300,10 @@ gameBoard.hidden = true;
 
 let roomName;
 const message = gameBoard.querySelector(".message");
+const score = gameBoard.querySelector(".score");
+let player1Score = 0;
+let player2Score = 0;
+score.innerText = `Player1 ${player1Score}:${player2Score} Player2`
 
 function handleJoin(e) {
     e.preventDefault();
@@ -285,14 +329,19 @@ socket.on("leaved", () => {
     toWelcome();
 })
 
+let yourRole = "";
+
 socket.on("player1", (who) => {
-    message.innerText = `You are ${who}`
+    yourRole = who;
+    message.innerText = `You are ${yourRole}`
 });
 socket.on("player2", (who) => {
-    message.innerText = `You are ${who}`
+    yourRole = who;
+    message.innerText = `You are ${yourRole}`
 });
 socket.on("observer", (who) => {
-    message.innerText = `You are ${who}`
+    yourRole = who;
+    message.innerText = `You are ${yourRole}`
 });
 
 
