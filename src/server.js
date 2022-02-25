@@ -18,7 +18,6 @@ const handleListen = () => console.log(`Listening on http://localhost:${app.get(
 const httpServer = http.createServer(app);
 const wsServer = new Server(httpServer);
 
-let rooms = 0;
 let winFlag1 = "";
 let winFlag2 = "";
 

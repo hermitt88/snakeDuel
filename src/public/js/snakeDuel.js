@@ -24,7 +24,6 @@ const gap = Math.ceil(canvas.width / (pointsPerLine + 2));
 
 const gameboardW = gap * pointsPerLine;
 const gameboardH = gap * pointsPerLine;
-console.log(gap, canvasW, gameboardW);
 
 const readyForm = document.querySelector(".readyForm");
 const leaveForm = document.querySelector(".leaveForm");
@@ -32,15 +31,17 @@ const leaveForm = document.querySelector(".leaveForm");
 let timeoutId;
 let snake1, snake2, apple;
 let opponentsSnake;
-let headX1, headY1;
-let headX2, headY2;
+let headX, headY;
 let snakeInterval;
 let lengthGoal;
 let direction, directionTemp;
-let directions = [KEY_RIGHT, KEY_DOWN, KEY_LEFT, KEY_UP]
-// setSnakeGame();
+let directions = [KEY_RIGHT, KEY_DOWN, KEY_LEFT, KEY_UP];
+let applesInGame;
+let pickApple;
 
 let touchstartX, touchstartY, touchendX, touchendY;
+
+const socket = io();
 
 window.addEventListener('touchstart', function(event) {
     touchstartX = event.changedTouches[0].screenX;
@@ -50,10 +51,10 @@ window.addEventListener('touchstart', function(event) {
 window.addEventListener('touchend', function(event) {
     touchendX = event.changedTouches[0].screenX;
     touchendY = event.changedTouches[0].screenY;
-    handleGesure();
+    handleGesture();
 }, false); 
 
-function handleGesure() {
+function handleGesture() {
     let lastKey;
     let swipeX = touchendX - touchstartX;
     let swipeY = touchendY - touchstartY;
@@ -76,10 +77,16 @@ function handleGesure() {
 }
 
 function putApple() {
-    while (apple.length === 0 || JSON.stringify([...snake1, ...snake2]).includes(JSON.stringify(apple))) {
-        apple = [Math.floor(Math.random() * pointsPerLine), Math.floor(Math.random() * pointsPerLine)];
+    while (apple.length < applesInGame){
+        pickApple = [Math.floor(Math.random() * pointsPerLine), Math.floor(Math.random() * pointsPerLine)];
+        while (JSON.stringify([...snake1, ...snake2, ...apple]).includes(JSON.stringify(pickApple))) {
+            pickApple = [Math.floor(Math.random() * pointsPerLine), Math.floor(Math.random() * pointsPerLine)];
+        };
+        paintBlock(pickApple[0], pickApple[1], appleColor);
+        apple.push(pickApple);
+        pickApple = [];
     }
-    paintBlock(apple[0], apple[1], appleColor);
+
 }
 
 function snakeGame() {
@@ -87,8 +94,8 @@ function snakeGame() {
 }
 
 function moveSnake() {
-    headX1 = snake1[0][0];
-    headY1 = snake1[0][1];
+    headX = snake1[0][0];
+    headY = snake1[0][1];
     if (directionTemp.length != 0) {
         let newDirection = directionTemp.shift();
         if ((direction == "right" && newDirection != "left" && newDirection != "right") 
@@ -98,49 +105,27 @@ function moveSnake() {
     }
     switch (direction) {
         case "right":
-            headX1 += 1;
+            headX += 1;
             break
         case "down":
-            headY1 += 1;
+            headY += 1;
             break
         case "left":
-            headX1 -= 1;
+            headX -= 1;
             break
         case "up":
-            headY1 -= 1;
+            headY -= 1;
             break
     }
-    if (headX1 == headX2 && headY1 == headY2) {
-        if (snake1.length > snake2.length) {
-            socket.emit("winFlag1", "win");
-            socket.emit("winFlag2", "lose");
-        } else if (snake1.length < snake2.length) {
-            socket.emit("winFlag1", "lose");
-            socket.emit("winFlag2", "win");
-        } else {
-            socket.emit("winFlag", "lose");
-            socket.emit("winFlag", "lose");
-        }
-    } else if (JSON.stringify(snake1).includes(JSON.stringify([headX1, headY1]), 1) || headX1<0 || headY1<0 || headX1>pointsPerLine-1 ||headY1>pointsPerLine-1) {
-        // gameOver();
-        socket.emit("winFlag1", "lose");
-    } else {
-        paintBlock(headX1, headY1, snakeColor1);
-        snake1.unshift([headX1, headY1]);
-        if (JSON.stringify(apple).includes(JSON.stringify(snake1[0]))) {
-            if (snakeLength == lengthGoal) {
-                // gameClear();
-                socket.emit("winFlag1", "win");
-            } else {
-                apple = [];
-                putApple();
-                snakeGame();
-            }
-        } else {
-            removeSnakeTail();
-            snakeGame();
-        }
-    }
+    resolveMoves();
+}
+
+function standBySnake(snake, color) {
+    for (let block of snake) {
+        let paintX = block[0];
+        let paintY = block[1];
+        paintBlock(paintX, paintY, color);
+    };
 }
 
 function setSnakeGame() {
@@ -167,18 +152,13 @@ function setSnakeGame() {
     direction = "right";
     directionTemp = [];
     snakeLength = 3;
-    for (let block of snake1) {
-        headX1 = block[0];
-        headY1 = block[1];
-        paintBlock(headX1, headY1, snakeColor1);
-    };
-    for (let block of snake2) {
-        headX2 = block[0];
-        headY2 = block[1];
-        paintBlock(headX2, headY2, snakeColor2);
-    };
+    standBySnake(snake1, snakeColor1);
+    standBySnake(snake2, snakeColor2);
     apple = [];
+    pickApple = [];
+    applesInGame = 2;
     putApple();
+
     snakeGame();
 }
 
@@ -191,6 +171,7 @@ socket.on("drawGame", (areTheyCleared) => {
         gameOver(snake1);
         gameOver(snake2);
     }
+    btns.hidden = true;
 })
 socket.on("winner", (didPlayer1Win) => {
     clearTimeout(timeoutId);
@@ -205,7 +186,54 @@ socket.on("winner", (didPlayer1Win) => {
         player2Score += 1;
         score.innerText = `Player1 ${player1Score}:${player2Score} Player2`
     }
+    btns.hidden = true;
 })
+
+function resolveMoves() {
+    let winFlag1 = "";
+    let winFlag2 = "";
+    // if (headX == headX2 && headY == headY2) {
+    //     if (snake1.length > snake2.length) {
+    //         winFlag1 = "win";
+    //         winFlag2 = "lose";
+    //         socket.emit("winFlag1", winFlag1);
+    //         socket.emit("winFlag2", winFlag2);
+    //     } else if (snake1.length < snake2.length) {
+    //         winFlag1 = "lose";
+    //         winFlag2 = "win";
+    //         socket.emit("winFlag1", "lose");
+    //         socket.emit("winFlag2", "win");
+    //     } else {
+    //         winFlag1 = "lose";
+    //         winFlag2 = "lose";
+    //         socket.emit("winFlag", "lose");
+    //         socket.emit("winFlag", "lose");
+    //     }
+    // } else 
+    if (JSON.stringify(snake1).includes(JSON.stringify([headX, headY]), 1) || headX<0 || headY<0 || headX>pointsPerLine-1 ||headY>pointsPerLine-1) {
+        socket.emit("winFlag1", "lose");
+    } else {
+        paintBlock(headX, headY, snakeColor1);
+        snake1.unshift([headX, headY]);
+        if (JSON.stringify(apple).includes(JSON.stringify(snake1[0]))) {
+            if (snakeLength == lengthGoal) {
+                socket.emit("winFlag1", "win");
+            } else {
+                for (let i = 0; i < apple.length; i++) {
+                    if (JSON.stringify(apple[i]) == JSON.stringify(snake1[0])) {
+                        apple.splice(i, 1);
+                        break
+                    }
+                }
+                putApple();
+                snakeGame();
+            }
+        } else {
+            removeSnakeTail();
+            snakeGame();
+        }
+    }
+}
 
 function gameOver(snake) {
     for (let i = 0; i < snake.length; i++) {
@@ -245,6 +273,8 @@ const btns = document.querySelector(".btns");
 function handleReadyBtn(e) {
     e.preventDefault();
     btns.hidden = true;
+    socket.emit("ready");
+
     setSnakeGame();
 }
 
@@ -289,7 +319,6 @@ function changeDirection(e) {
 }
 
 
-const socket = io();
 // const socket = io("HEROKU URL");
 const welcome = document.getElementById("welcome");
 const joinForm = document.querySelector(".joinForm");
@@ -333,15 +362,16 @@ let yourRole = "";
 
 socket.on("player1", (who) => {
     yourRole = who;
-    message.innerText = `You are ${yourRole}`
+    message.innerText = `You are ${yourRole}`;
 });
 socket.on("player2", (who) => {
     yourRole = who;
-    message.innerText = `You are ${yourRole}`
+    message.innerText = `You are ${yourRole}`;
 });
 socket.on("observer", (who) => {
     yourRole = who;
-    message.innerText = `You are ${yourRole}`
+    readyForm.hidden = true;
+    message.innerText = `You are ${yourRole}`;
 });
 
 
