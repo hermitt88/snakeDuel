@@ -93,9 +93,7 @@ function snakeGame() {
     timeoutId = setTimeout(moveSnake, snakeInterval);
 }
 
-function moveSnake() {
-    headX = snake1[0][0];
-    headY = snake1[0][1];
+function determineDirection () {
     if (directionTemp.length != 0) {
         let newDirection = directionTemp.shift();
         if ((direction == "right" && newDirection != "left" && newDirection != "right") 
@@ -103,6 +101,12 @@ function moveSnake() {
         || (direction == "left" && newDirection != "right" && newDirection != "left") 
         || (direction == "up" && newDirection != "down" && newDirection != "up")) {direction = newDirection}
     }
+}
+
+function moveSnake() {
+    determineDirection();
+    headX = snake1[0][0];
+    headY = snake1[0][1];
     switch (direction) {
         case "right":
             headX += 1;
@@ -273,7 +277,7 @@ const btns = document.querySelector(".btns");
 function handleReadyBtn(e) {
     e.preventDefault();
     btns.hidden = true;
-    socket.emit("ready");
+    socket.emit("ready", yourRole);
 
     setSnakeGame();
 }
@@ -287,7 +291,7 @@ function handleReadyBtn(e) {
 function handleLeaveBtn(e) {
     e.preventDefault();
     toWelcome();
-    socket.emit("leave_room", roomName);
+    socket.emit("leave_room", roomName, toWelcome);
 }
 
 readyForm.addEventListener("submit", handleReadyBtn);
@@ -338,7 +342,7 @@ function handleJoin(e) {
     e.preventDefault();
     const input = joinForm.querySelector("input");
     roomName = input.value;
-    socket.emit("join_room", roomName);
+    socket.emit("join_room", roomName, whoAmI);
     input.value = "";
     toRoom();
     joinedRoom.innerText = `Room: ${roomName}`;
@@ -350,29 +354,19 @@ function toRoom() {
 };
 
 function toWelcome() {
+    yourRole = "";
     gameBoard.hidden = true;
     welcome.hidden = false;
 };
 
-socket.on("leaved", () => {
-    toWelcome();
-})
-
 let yourRole = "";
 
-socket.on("player1", (who) => {
+function whoAmI (who) {
     yourRole = who;
     message.innerText = `You are ${yourRole}`;
-});
-socket.on("player2", (who) => {
-    yourRole = who;
-    message.innerText = `You are ${yourRole}`;
-});
-socket.on("observer", (who) => {
-    yourRole = who;
-    readyForm.hidden = true;
-    message.innerText = `You are ${yourRole}`;
-});
-
+    if (yourRole == "observer") {
+        readyForm.hidden = true;
+    }
+}
 
 joinForm.addEventListener("submit", handleJoin);

@@ -44,17 +44,18 @@ function judge(winFlag1, winFlag2) {
 }
 
 wsServer.on("connection", (socket) => {
-    socket.on("join_room", (roomName) => {
+    socket.on("join_room", (roomName, whoAmI) => {
         socket.join(roomName);
         if (counter(roomName) == 1) {
-            socket.emit("player1", "player1");
+            whoAmI("player1");
         } else if (counter(roomName) == 2) {
-            socket.emit("player2", "player2");
+            whoAmI("player2");
         } else {
-            socket.emit("observer", "observer");
+            whoAmI("observer");
         }
 
     });
+    // socket.on("ready", who) {};
     socket.on("winFlag1", (winFlag) => {
         winFlag1 = winFlag;
         judge(winFlag1, winFlag2);
@@ -63,9 +64,9 @@ wsServer.on("connection", (socket) => {
         winFlag2 = winFlag;
         judge(winFlag1, winFlag2);
     })
-    socket.on("leave_room", (roomName) => {
+    socket.on("leave_room", (roomName, toWelcome) => {
         socket.leave(roomName);
-        socket.emit("leaved");
+        toWelcome();
     })
 
 });
