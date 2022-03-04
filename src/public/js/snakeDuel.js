@@ -261,8 +261,11 @@ function resolveMoves() {
 function gameOver(snake) {
     for (let i = 0; i < snake.length; i++) {
         setTimeout(() => {
+            const pad = Math.round(0.075*gap);
+            const padX = pad + snake[0][0]*gap;
+            const padY = pad + snake[0][1]*gap;
             ctxGame.fillStyle = "hsl(0, 0%, " + Math.round(100*(1 - i/(snake.length - 1))).toString() + "%)";
-            ctxGame.fillRect(Math.round((0.075+snake[i][0])*gap), Math.round((0.075+snake[i][1])*gap), Math.round(0.85*gap), Math.round(0.85*gap));}, 100*i);
+            ctxGame.fillRect(padX, padY, gap-2*pad, gap-2*pad);}, 100*i);
         }
     btns.hidden = false;
 }
@@ -270,15 +273,21 @@ function gameOver(snake) {
 function gameClear(snake) {
     for (let i = 0; i < snake.length; i++) {
         setTimeout(() => {
+            const pad = Math.round(0.075*gap);
+            const padX = pad + snake[0][0]*gap;
+            const padY = pad + snake[0][1]*gap;
             ctxGame.fillStyle = "hsl(" + Math.round(320*i/(snake.length - 1)).toString() + ", 100%, 50%)";
-            ctxGame.fillRect(Math.round((0.075+snake[i][0])*gap), Math.round((0.075+snake[i][1])*gap), Math.round(0.85*gap), Math.round(0.85*gap));}, 100*i);
+            ctxGame.fillRect(padX, padY, gap-2*pad, gap-2*pad);}, 100*i);
         }
     btns.hidden = false;
 }
 
 function paintBlock(x, y, color) {
     ctxGame.fillStyle = color;
-    ctxGame.fillRect(Math.round((0.075+x)*gap), Math.round((0.075+y)*gap), Math.round(0.85*gap), Math.round(0.85*gap));
+    const pad = Math.round(0.075*gap);
+    const padX = pad + x*gap;
+    const padY = pad + y*gap;
+    ctxGame.fillRect(padX, padY, gap-2*pad, gap-2*pad);
 }
 
 function removeSnakeTail() {
