@@ -3,7 +3,7 @@ body {
     padding: 0;
 }
 
-#gameCanvas {
+#gameCanvas, #msgCanvas {
     position: absolute;
     top: 0;
     left: 0;

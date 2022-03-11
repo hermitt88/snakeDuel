@@ -2,6 +2,8 @@ const gameCanvas = document.getElementById("gameCanvas");
 const ctxGame = gameCanvas.getContext("2d");
 const bgCanvas = document.getElementById("bgCanvas");
 const ctxBg = bgCanvas.getContext("2d");
+const msgCanvas = document.getElementById("msgCanvas");
+const ctxMsg = msgCanvas.getContext("2d");
 
 document.body.style.overflow = "hidden";
 
@@ -48,6 +50,7 @@ let pickApple;
 let touchstartX, touchstartY, touchendX, touchendY;
 
 const socket = io();
+let players = [];
 
 window.addEventListener('touchstart', function(event) {
     touchstartX = event.changedTouches[0].screenX;
@@ -185,32 +188,32 @@ function setSnakeGame() {
     snakeGame();
 }
 
-socket.on("drawGame", (areTheyCleared) => {
-    clearTimeout(timeoutId);
-    if (areTheyCleared) {
-        gameClear(snake1);
-        gameClear(snake2);
-    } else {
-        gameOver(snake1);
-        gameOver(snake2);
-    }
-    btns.hidden = true;
-})
-socket.on("winner", (didPlayer1Win) => {
-    clearTimeout(timeoutId);
-    if (didPlayer1Win) {
-        gameClear(snake1);
-        gameOver(snake2);
-        player1Score += 1;
-        score.innerText = `Player1 ${player1Score}:${player2Score} Player2`
-    } else {
-        gameOver(snake1);
-        gameClear(snake2);
-        player2Score += 1;
-        score.innerText = `Player1 ${player1Score}:${player2Score} Player2`
-    }
-    btns.hidden = true;
-})
+// socket.on("drawGame", (areTheyCleared) => {
+//     clearTimeout(timeoutId);
+//     if (areTheyCleared) {
+//         gameClear(snake1);
+//         gameClear(snake2);
+//     } else {
+//         gameOver(snake1);
+//         gameOver(snake2);
+//     }
+//     btns.hidden = true;
+// })
+// socket.on("winner", (didPlayer1Win) => {
+//     clearTimeout(timeoutId);
+//     if (didPlayer1Win) {
+//         gameClear(snake1);
+//         gameOver(snake2);
+//         player1Score += 1;
+//         score.innerText = `Player1 ${player1Score}:${player2Score} Player2`
+//     } else {
+//         gameOver(snake1);
+//         gameClear(snake2);
+//         player2Score += 1;
+//         score.innerText = `Player1 ${player1Score}:${player2Score} Player2`
+//     }
+//     btns.hidden = true;
+// })
 
 function resolveMoves() {
     let winFlag1 = "";
