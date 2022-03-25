@@ -15,6 +15,10 @@ bgCanvas.width = gameCanvas.width;
 bgCanvas.height = gameCanvas.width;
 const bgCanvasW = bgCanvas.width;
 const bgCanvasH = bgCanvas.height;
+msgCanvas.width = gameCanvas.width;
+msgCanvas.height = gameCanvas.width;
+const msgCanvasW = msgCanvas.width;
+const msgCanvasH = msgCanvas.height;
 
 const KEY_RIGHT = "ArrowRight"
 const KEY_DOWN = "ArrowDown"
